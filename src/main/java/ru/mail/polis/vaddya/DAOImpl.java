@@ -4,14 +4,12 @@ import org.jetbrains.annotations.NotNull;
 import ru.mail.polis.DAO;
 import ru.mail.polis.Record;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
 public class DAOImpl implements DAO {
-
     private final NavigableMap<ByteBuffer, Record> storage = new TreeMap<>();
 
     @NotNull
