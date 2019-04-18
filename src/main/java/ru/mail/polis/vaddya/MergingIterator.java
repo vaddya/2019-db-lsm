@@ -18,6 +18,13 @@ import static java.util.Comparator.comparing;
 public class MergingIterator implements Iterator<Record> {
     private final Collection<PeekingIterator<? extends TableEntry>> iterators = new ArrayList<>();
 
+    /**
+     * Iterator to merge multiple Record providers
+     *
+     * @param memTable current mem table
+     * @param ssTables list of sorted strings tables
+     * @param from     start key
+     */
     public MergingIterator(@NotNull final MemTable memTable,
                            @NotNull final Collection<SSTableIndex> ssTables,
                            @NotNull final ByteBuffer from) {

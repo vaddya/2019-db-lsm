@@ -16,6 +16,16 @@ import static ru.mail.polis.vaddya.ByteUtils.readIntFromByteArray;
 public class SSTableIndex implements Iterable<SSTableIndexEntry> {
     private final NavigableMap<ByteBuffer, SSTableIndexEntry> entries;
 
+    /**
+     * Create sorted strings table index using timestamp,
+     * file containing index and file containing data
+     *
+     * @param ts        timestamp when data was saved
+     * @param indexFile file containing index
+     * @param dataFile  file containing data
+     * @return an sorted strings table instance
+     * @throws IOException if cannot read from files
+     */
     @NotNull
     public static SSTableIndex from(@NotNull final LocalDateTime ts,
                                     @NotNull final File indexFile,

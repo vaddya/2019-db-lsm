@@ -8,7 +8,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.Iterator;
 
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toSet;
@@ -22,6 +26,12 @@ public class DAOImpl implements DAO {
     private final List<SSTableIndex> ssTables = new ArrayList<>();
     private final File root;
 
+    /**
+     * Creates persistent DAO
+     *
+     * @param root folder to save data
+     * @throws IOException if cannot read saved data
+     */
     public DAOImpl(@NotNull final File root) throws IOException {
         this.root = root;
 

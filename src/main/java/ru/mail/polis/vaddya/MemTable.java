@@ -45,6 +45,13 @@ public class MemTable implements Iterable<MemTableEntry> {
         return table.tailMap(from).values().iterator();
     }
 
+    /**
+     * Dump current mem table to specified files
+     *
+     * @param indexFile file to store index
+     * @param dataFile  file to store data
+     * @throws IOException if cannot write data
+     */
     public void dumpTo(@NotNull final File indexFile,
                        @NotNull final File dataFile) throws IOException {
         var offset = 0;

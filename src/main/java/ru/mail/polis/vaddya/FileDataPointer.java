@@ -20,14 +20,26 @@ public class FileDataPointer {
         return new FileDataPointer(dataFile, offset, size);
     }
 
+    /**
+     * Creates instance of pointer to data inside file
+     *
+     * @param file   file to read from
+     * @param offset offset inside file
+     * @param size   size of data to read
+     */
     public FileDataPointer(@NotNull final File file,
-                            final int offset,
-                            final int size) {
+                           final int offset,
+                           final int size) {
         this.file = file;
         this.offset = offset;
         this.size = size;
     }
 
+    /**
+     * Read data from file
+     *
+     * @return bytes of data
+     */
     public ByteBuffer read() {
         final var res = ByteBuffer.allocate(size);
         try (var is = new FileInputStream(file)) {
