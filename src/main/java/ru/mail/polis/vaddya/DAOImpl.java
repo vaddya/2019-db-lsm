@@ -27,7 +27,7 @@ public class DAOImpl implements DAO {
     private final File root;
 
     /**
-     * Creates persistent DAO
+     * Creates persistent DAO.
      *
      * @param root folder to save data
      * @throws IOException if cannot read saved data

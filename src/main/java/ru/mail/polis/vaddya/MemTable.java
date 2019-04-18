@@ -46,7 +46,7 @@ public class MemTable implements Iterable<MemTableEntry> {
     }
 
     /**
-     * Dump current mem table to specified files
+     * Dump current mem table to specified files.
      *
      * @param indexFile file to store index
      * @param dataFile  file to store data

@@ -19,7 +19,7 @@ public class MergingIterator implements Iterator<Record> {
     private final Collection<PeekingIterator<? extends TableEntry>> iterators = new ArrayList<>();
 
     /**
-     * Iterator to merge multiple Record providers
+     * Iterator to merge multiple Record providers.
      *
      * @param memTable current mem table
      * @param ssTables list of sorted strings tables

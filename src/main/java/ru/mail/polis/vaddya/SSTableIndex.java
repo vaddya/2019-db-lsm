@@ -18,7 +18,7 @@ public class SSTableIndex implements Iterable<SSTableIndexEntry> {
 
     /**
      * Create sorted strings table index using timestamp,
-     * file containing index and file containing data
+     * file containing index and file containing data.
      *
      * @param ts        timestamp when data was saved
      * @param indexFile file containing index

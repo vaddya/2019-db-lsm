@@ -17,7 +17,7 @@ public final class ByteUtils {
     }
 
     /**
-     * Read bytes from buffer to byte array
+     * Read bytes from buffer to byte array.
      *
      * @param byteBuffer buffer
      * @return read bytes
@@ -31,7 +31,7 @@ public final class ByteUtils {
     }
 
     /**
-     * Write integer to byte array with specified offset
+     * Write integer to byte array with specified offset.
      *
      * @param dest   a byte array to write
      * @param value  integer to be written
@@ -45,7 +45,7 @@ public final class ByteUtils {
     }
 
     /**
-     * Read integer from byte array with specified offset
+     * Read integer from byte array with specified offset.
      *
      * @param src    a byte array to read
      * @param offset offset inside a byte array

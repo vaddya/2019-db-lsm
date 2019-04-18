@@ -21,7 +21,7 @@ public class FileDataPointer {
     }
 
     /**
-     * Creates instance of pointer to data inside file
+     * Creates instance of pointer to data inside file.
      *
      * @param file   file to read from
      * @param offset offset inside file
@@ -36,7 +36,7 @@ public class FileDataPointer {
     }
 
     /**
-     * Read data from file
+     * Read data from file.
      *
      * @return bytes of data
      */
