@@ -1,31 +1,51 @@
 package ru.mail.polis.vaddya;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.nio.ByteBuffer;
+import java.time.LocalDateTime;
 
-public class SSTableIndexEntry {
+public class SSTableIndexEntry implements TableEntry {
     private final ByteBuffer key;
-    private final int offset;
-    private final int size;
+    private final LocalDateTime ts;
+    private final FileDataPointer data;
+    private final boolean deleted;
 
-    public static SSTableIndexEntry from(ByteBuffer key, int offset, int size) {
-        return new SSTableIndexEntry(key, offset, size);
+    @NotNull
+    public static SSTableIndexEntry from(@NotNull final ByteBuffer key,
+                                         @NotNull final LocalDateTime ts,
+                                         @NotNull final FileDataPointer data,
+                                         final boolean deleted) {
+        return new SSTableIndexEntry(key, ts, data, deleted);
     }
 
-    private SSTableIndexEntry(ByteBuffer key, int offset, int size) {
+    private SSTableIndexEntry(@NotNull final ByteBuffer key,
+                              @NotNull final LocalDateTime ts,
+                              @NotNull final FileDataPointer data,
+                              final boolean deleted) {
         this.key = key;
-        this.offset = offset;
-        this.size = size;
+        this.ts = ts;
+        this.data = data;
+        this.deleted = deleted;
     }
 
+    @Override
     public ByteBuffer getKey() {
         return key;
     }
 
-    public int getOffset() {
-        return offset;
+    @Override
+    public LocalDateTime ts() {
+        return ts;
     }
 
-    public int getSize() {
-        return size;
+    @Override
+    public ByteBuffer getValue() {
+        return data.read();
+    }
+
+    @Override
+    public boolean isDeleted() {
+        return deleted;
     }
 }
