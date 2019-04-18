@@ -27,9 +27,9 @@ public class SSTableIndex implements Iterable<SSTableIndexEntry> {
             final var keySize = readIntFromByteArray(bytes, idx);
             idx += 4;
 
-            final var keyBytes = new byte[keySize];
-            System.arraycopy(bytes, idx, keyBytes, 0, keySize);
-            final var key = ByteBuffer.wrap(keyBytes);
+            final var key = ByteBuffer.allocate(keySize)
+                    .put(bytes, idx, keySize)
+                    .position(0);
             idx += keySize;
 
             final var offset = readIntFromByteArray(bytes, idx);

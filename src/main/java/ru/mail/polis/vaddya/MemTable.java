@@ -17,7 +17,7 @@ import static ru.mail.polis.vaddya.ByteUtils.writeIntToByteArray;
 
 public class MemTable implements Iterable<MemTableEntry> {
     private final NavigableMap<ByteBuffer, MemTableEntry> table = new TreeMap<>();
-    private int currentSize = 0;
+    private int currentSize;
 
     public int getCurrentSize() {
         return currentSize;
