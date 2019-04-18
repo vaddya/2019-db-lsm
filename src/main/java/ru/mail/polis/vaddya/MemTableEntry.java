@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 import static ru.mail.polis.vaddya.ByteUtils.emptyBuffer;
 
-public class MemTableEntry implements TableEntry {
+public final class MemTableEntry implements TableEntry {
     private final Record record;
     private final boolean deleted;
     private final LocalDateTime ts;

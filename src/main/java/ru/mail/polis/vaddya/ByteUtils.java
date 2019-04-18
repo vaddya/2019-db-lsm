@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
 
-public class ByteUtils {
+public final class ByteUtils {
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
 
     private ByteUtils() {

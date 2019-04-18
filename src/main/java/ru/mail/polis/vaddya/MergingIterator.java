@@ -7,9 +7,13 @@ import org.jetbrains.annotations.Nullable;
 import ru.mail.polis.Record;
 
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import static com.google.common.collect.Iterators.peekingIterator;
+import static java.util.Comparator.comparing;
 
 public class MergingIterator implements Iterator<Record> {
     private final Collection<PeekingIterator<? extends TableEntry>> iterators = new ArrayList<>();
@@ -43,8 +47,8 @@ public class MergingIterator implements Iterator<Record> {
     private TableEntry findNextTableEntry() {
         final var next = iterators.stream()
                 .filter(Iterator::hasNext)
-                .min(Comparator.comparing(
-                        (PeekingIterator<? extends TableEntry> o) -> o.peek().getKey()).thenComparing(o -> o.peek().ts()))
+                .min(comparing((PeekingIterator<? extends TableEntry> o) -> o.peek().getKey())
+                             .thenComparing(o -> o.peek().ts()))
                 .orElseThrow(NoSuchElementException::new)
                 .next();
         if (next.isDeleted()) {
@@ -54,8 +58,8 @@ public class MergingIterator implements Iterator<Record> {
         final var hasNewer = iterators.stream()
                 .filter(Iterator::hasNext)
                 .map(PeekingIterator::peek)
-                .anyMatch(entry -> entry.getKey().equals(next.getKey()) &&
-                                   entry.ts().isAfter(next.ts()));
+                .anyMatch(entry -> entry.getKey().equals(next.getKey())
+                                   && entry.ts().isAfter(next.ts()));
         if (hasNewer) {
             return null;
         }

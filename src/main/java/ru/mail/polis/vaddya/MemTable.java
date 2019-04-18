@@ -23,12 +23,13 @@ public class MemTable implements Iterable<MemTableEntry> {
         return currentSize;
     }
 
-    public void upsert(ByteBuffer key, Record value) {
+    public void upsert(@NotNull final ByteBuffer key,
+                       @NotNull final Record value) {
         table.put(key, MemTableEntry.upsert(value));
         currentSize += value.getValue().remaining();
     }
 
-    public void remove(ByteBuffer key) {
+    public void remove(@NotNull final ByteBuffer key) {
         MemTableEntry.delete(key);
         table.put(key, MemTableEntry.delete(key));
     }
@@ -47,7 +48,7 @@ public class MemTable implements Iterable<MemTableEntry> {
     public void dumpTo(@NotNull final File indexFile,
                        @NotNull final File dataFile) throws IOException {
         var offset = 0;
-        for (var entry : table.values()) {
+        for (final var entry : table.values()) {
             final var valueBytes = dataToBytes(entry);
             Files.write(dataFile.toPath(), valueBytes, APPEND);
 

@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.ByteBuffer;
 import java.time.LocalDateTime;
 
-public class SSTableIndexEntry implements TableEntry {
+public final class SSTableIndexEntry implements TableEntry {
     private final ByteBuffer key;
     private final LocalDateTime ts;
     private final FileDataPointer data;

@@ -22,32 +22,33 @@ public class SSTableIndex implements Iterable<SSTableIndexEntry> {
                                     @NotNull final File dataFile) throws IOException {
         final byte[] bytes = Files.readAllBytes(indexFile.toPath());
         final NavigableMap<ByteBuffer, SSTableIndexEntry> entries = new TreeMap<>();
-        var i = 0;
-        while (i < bytes.length) {
-            final var keySize = readIntFromByteArray(bytes, i);
-            i += 4;
+        var idx = 0;
+        while (idx < bytes.length) {
+            final var keySize = readIntFromByteArray(bytes, idx);
+            idx += 4;
 
             final var keyBytes = new byte[keySize];
-            System.arraycopy(bytes, i, keyBytes, 0, keySize);
-            ByteBuffer key = ByteBuffer.wrap(keyBytes);
-            i += keySize;
-            final var offset = readIntFromByteArray(bytes, i);
-            i += 4;
+            System.arraycopy(bytes, idx, keyBytes, 0, keySize);
+            final var key = ByteBuffer.wrap(keyBytes);
+            idx += keySize;
 
-            final var size = readIntFromByteArray(bytes, i);
-            i += 4;
+            final var offset = readIntFromByteArray(bytes, idx);
+            idx += 4;
 
-            final boolean deleted = bytes[i] == 1;
-            i += 1;
+            final var size = readIntFromByteArray(bytes, idx);
+            idx += 4;
 
-            final var dataPointer = new FileDataPointer(dataFile, offset, size);
+            final boolean deleted = bytes[idx] == 1;
+            idx += 1;
+
+            final var dataPointer = FileDataPointer.to(dataFile, offset, size);
             entries.put(key, SSTableIndexEntry.from(key, ts, dataPointer, deleted));
         }
 
         return new SSTableIndex(entries);
     }
 
-    private SSTableIndex(@NotNull final NavigableMap<ByteBuffer, SSTableIndexEntry> entries) {
+    public SSTableIndex(@NotNull final NavigableMap<ByteBuffer, SSTableIndexEntry> entries) {
         this.entries = entries;
     }
 
