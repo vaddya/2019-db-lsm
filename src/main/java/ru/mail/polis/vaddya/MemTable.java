@@ -16,8 +16,7 @@ import static ru.mail.polis.vaddya.ByteUtils.readBytesFromByteBuffer;
 import static ru.mail.polis.vaddya.ByteUtils.writeIntToByteArray;
 
 public class MemTable implements Iterable<MemTableEntry> {
-
-    private final NavigableMap<ByteBuffer, MemTableEntry> memTable = new TreeMap<>();
+    private final NavigableMap<ByteBuffer, MemTableEntry> table = new TreeMap<>();
     private int currentSize = 0;
 
     public int getCurrentSize() {
@@ -25,30 +24,30 @@ public class MemTable implements Iterable<MemTableEntry> {
     }
 
     public void upsert(ByteBuffer key, Record value) {
-        memTable.put(key, MemTableEntry.upsert(value));
+        table.put(key, MemTableEntry.upsert(value));
         currentSize += value.getValue().remaining();
     }
 
     public void remove(ByteBuffer key) {
         MemTableEntry.delete(key);
-        memTable.put(key, MemTableEntry.delete(key));
+        table.put(key, MemTableEntry.delete(key));
     }
 
     @NotNull
     @Override
     public Iterator<MemTableEntry> iterator() {
-        return memTable.values().iterator();
+        return table.values().iterator();
     }
 
     @NotNull
     public Iterator<MemTableEntry> iteratorFrom(@NotNull final ByteBuffer from) {
-        return memTable.tailMap(from).values().iterator();
+        return table.tailMap(from).values().iterator();
     }
 
     public void dumpTo(@NotNull final File indexFile,
                        @NotNull final File dataFile) throws IOException {
         var offset = 0;
-        for (var entry : memTable.values()) {
+        for (var entry : table.values()) {
             final var valueBytes = dataToBytes(entry);
             Files.write(dataFile.toPath(), valueBytes, APPEND);
 
@@ -57,7 +56,7 @@ public class MemTable implements Iterable<MemTableEntry> {
 
             offset += valueBytes.length;
         }
-        memTable.clear();
+        table.clear();
         currentSize = 0;
     }
 

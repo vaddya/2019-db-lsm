@@ -29,7 +29,7 @@ public class DAOImpl implements DAO {
                 .map(Arrays::asList)
                 .orElse(emptyList())
                 .stream()
-                .map(file -> file.substring(0, file.lastIndexOf("_")))
+                .map(file -> file.substring(0, file.lastIndexOf('_')))
                 .collect(toSet());
         for (var name : names) {
             this.ssTables.add(parseTableIndex(name));

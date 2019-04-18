@@ -3,6 +3,7 @@ package ru.mail.polis.vaddya;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 
 public class FileDataPointer {
@@ -17,14 +18,13 @@ public class FileDataPointer {
     }
 
     public ByteBuffer read() {
-        try {
-            final var res = ByteBuffer.allocate(size);
-            final var channel = new FileInputStream(file).getChannel();
-            channel.position(offset).read(res);
+        final var res = ByteBuffer.allocate(size);
+        try (var is = new FileInputStream(file)) {
+            is.getChannel().position(offset).read(res);
             return res;
         } catch (IOException e) {
             e.printStackTrace();
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
 }
