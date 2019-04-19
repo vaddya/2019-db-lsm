@@ -30,7 +30,6 @@ public class MemTable implements Iterable<MemTableEntry> {
     }
 
     public void remove(@NotNull final ByteBuffer key) {
-        MemTableEntry.delete(key);
         table.put(key, MemTableEntry.delete(key));
     }
 
