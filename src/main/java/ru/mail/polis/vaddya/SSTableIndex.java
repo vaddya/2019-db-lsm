@@ -4,12 +4,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.channels.FileChannel;
 import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.NavigableMap;
 import java.util.TreeMap;
+
+import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 
 public final class SSTableIndex implements Iterable<SSTableIndexEntry> {
     private final NavigableMap<ByteBuffer, SSTableIndexEntry> entries;
@@ -26,12 +27,12 @@ public final class SSTableIndex implements Iterable<SSTableIndexEntry> {
      */
     @NotNull
     public static SSTableIndex from(@NotNull final LocalDateTime ts,
-                                    @NotNull final Path indexPath,
-                                    @NotNull final Path dataPath) throws IOException {
-
-        final var bytes = Files.readAllBytes(indexPath);
+                                    @NotNull final FileChannel indexPath,
+                                    @NotNull final FileChannel dataPath) throws IOException {
         final var entries = new TreeMap<ByteBuffer, SSTableIndexEntry>();
-        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        final var buffer = ByteBuffer.allocate((int) indexPath.size());
+        indexPath.read(buffer);
+        buffer.flip();
         while (buffer.hasRemaining()) {
             final var keySize = buffer.getInt();
             final var key = ByteBuffer.allocate(keySize);
@@ -40,8 +41,8 @@ public final class SSTableIndex implements Iterable<SSTableIndexEntry> {
             final var size = buffer.getInt();
             final var deleted = buffer.get() == Byte.MAX_VALUE;
 
-            final var dataPointer = FileDataPointer.to(dataPath, offset, size);
-            entries.put(key, SSTableIndexEntry.from(key, ts, dataPointer, deleted));
+            final var value = dataPath.map(READ_ONLY, offset, size);
+            entries.put(key, SSTableIndexEntry.from(key, value, ts, deleted));
         }
         return new SSTableIndex(entries);
     }

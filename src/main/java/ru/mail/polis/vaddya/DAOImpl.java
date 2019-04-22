@@ -8,12 +8,16 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
 
-import static java.nio.file.StandardOpenOption.CREATE_NEW;
-import static java.nio.file.StandardOpenOption.WRITE;
+import static java.nio.file.StandardOpenOption.*;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toSet;
 
@@ -49,8 +53,9 @@ public class DAOImpl implements DAO {
     @NotNull
     private SSTableIndex parseTableIndex(@NotNull final String name) throws IOException {
         final var ts = LocalDateTime.parse(name);
-
-        return SSTableIndex.from(ts, indexPath(name), dataPath(name));
+        final var indexChannel = indexChannel(name, READ);
+        final var dataChannel = dataChannel(name, READ);
+        return SSTableIndex.from(ts, indexChannel, dataChannel);
     }
 
     @NotNull
@@ -81,18 +86,23 @@ public class DAOImpl implements DAO {
 
     private void dumpMemTable() throws IOException {
         final var now = LocalDateTime.now().toString();
-        final var indexChannel = FileChannel.open(indexPath(now), CREATE_NEW, WRITE);
-        final var dataChannel = FileChannel.open(dataPath(now), CREATE_NEW, WRITE);
+        final var indexChannel = indexChannel(now, CREATE_NEW, WRITE);
+        final var dataChannel = dataChannel(now, CREATE_NEW, WRITE);
         memTable.dumpTo(indexChannel, dataChannel);
     }
 
+
     @NotNull
-    private Path indexPath(@NotNull final String name) {
-        return Path.of(root.getAbsolutePath(), name + INDEX_SUFFIX);
+    private FileChannel indexChannel(@NotNull final String name,
+                                     @NotNull final OpenOption... options) throws IOException {
+        final var path = Path.of(root.getAbsolutePath(), name + INDEX_SUFFIX);
+        return FileChannel.open(path, options);
     }
 
     @NotNull
-    private Path dataPath(@NotNull final String name) {
-        return Path.of(root.getAbsolutePath(), name + DATA_SUFFIX);
+    private FileChannel dataChannel(@NotNull final String name,
+                                    @NotNull final OpenOption... options) throws IOException {
+        final var path = Path.of(root.getAbsolutePath(), name + DATA_SUFFIX);
+        return FileChannel.open(path, options);
     }
 }
