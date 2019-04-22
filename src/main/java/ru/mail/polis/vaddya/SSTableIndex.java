@@ -30,12 +30,12 @@ public class SSTableIndex implements Iterable<SSTableIndexEntry> {
     public static SSTableIndex from(@NotNull final LocalDateTime ts,
                                     @NotNull final File indexFile,
                                     @NotNull final File dataFile) throws IOException {
-        final byte[] bytes = Files.readAllBytes(indexFile.toPath());
-        final NavigableMap<ByteBuffer, SSTableIndexEntry> entries = new TreeMap<>();
+        final var bytes = Files.readAllBytes(indexFile.toPath());
+        final var entries = new TreeMap<ByteBuffer, SSTableIndexEntry>();
         var idx = 0;
         while (idx < bytes.length) {
             final var keySize = readIntFromByteArray(bytes, idx);
-            idx += 4;
+            idx += Integer.BYTES;
 
             final var key = ByteBuffer.allocate(keySize)
                     .put(bytes, idx, keySize)
@@ -58,7 +58,7 @@ public class SSTableIndex implements Iterable<SSTableIndexEntry> {
         return new SSTableIndex(entries);
     }
 
-    public SSTableIndex(@NotNull final NavigableMap<ByteBuffer, SSTableIndexEntry> entries) {
+    private SSTableIndex(@NotNull final NavigableMap<ByteBuffer, SSTableIndexEntry> entries) {
         this.entries = entries;
     }
 

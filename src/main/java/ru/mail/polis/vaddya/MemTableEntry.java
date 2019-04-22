@@ -36,16 +36,19 @@ public final class MemTableEntry implements TableEntry {
     }
 
     @Override
+    @NotNull
     public LocalDateTime ts() {
         return ts;
     }
 
     @Override
+    @NotNull
     public ByteBuffer getKey() {
         return record.getKey();
     }
 
     @Override
+    @NotNull
     public ByteBuffer getValue() {
         return record.getValue();
     }

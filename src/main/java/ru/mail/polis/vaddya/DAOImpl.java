@@ -46,7 +46,6 @@ public class DAOImpl implements DAO {
         }
     }
 
-
     @NotNull
     private SSTableIndex parseTableIndex(@NotNull final String name) throws IOException {
         final var ts = LocalDateTime.parse(name);
@@ -69,12 +68,12 @@ public class DAOImpl implements DAO {
         if (memTable.getCurrentSize() + valueSize > MEM_TABLE_SIZE && memTable.getCurrentSize() > 0) {
             dumpMemTable();
         }
-        memTable.upsert(key, Record.of(key, value));
+        memTable.upsert(key.duplicate().asReadOnlyBuffer(), Record.of(key, value));
     }
 
     @Override
     public void remove(@NotNull final ByteBuffer key) {
-        memTable.remove(key);
+        memTable.remove(key.duplicate().asReadOnlyBuffer());
     }
 
     @Override

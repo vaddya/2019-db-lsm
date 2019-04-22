@@ -30,16 +30,19 @@ public final class SSTableIndexEntry implements TableEntry {
     }
 
     @Override
+    @NotNull
     public ByteBuffer getKey() {
         return key;
     }
 
     @Override
+    @NotNull
     public LocalDateTime ts() {
         return ts;
     }
 
     @Override
+    @NotNull
     public ByteBuffer getValue() {
         return data.read();
     }
