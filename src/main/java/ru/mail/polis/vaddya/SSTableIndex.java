@@ -13,7 +13,7 @@ import java.util.TreeMap;
 
 import static ru.mail.polis.vaddya.ByteUtils.readIntFromByteArray;
 
-public class SSTableIndex implements Iterable<SSTableIndexEntry> {
+public final class SSTableIndex implements Iterable<SSTableIndexEntry> {
     private final NavigableMap<ByteBuffer, SSTableIndexEntry> entries;
 
     /**
