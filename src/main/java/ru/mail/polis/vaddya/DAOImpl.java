@@ -17,7 +17,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
-import static java.nio.file.StandardOpenOption.*;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toSet;
 
