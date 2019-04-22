@@ -2,16 +2,14 @@ package ru.mail.polis.vaddya;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.NavigableMap;
 import java.util.TreeMap;
-
-import static ru.mail.polis.vaddya.ByteUtils.readIntFromByteArray;
 
 public final class SSTableIndex implements Iterable<SSTableIndexEntry> {
     private final NavigableMap<ByteBuffer, SSTableIndexEntry> entries;
@@ -21,40 +19,30 @@ public final class SSTableIndex implements Iterable<SSTableIndexEntry> {
      * file containing index and file containing data.
      *
      * @param ts        timestamp when data was saved
-     * @param indexFile file containing index
-     * @param dataFile  file containing data
+     * @param indexPath path to file containing index
+     * @param dataPath  path to file containing data
      * @return an sorted strings table instance
      * @throws IOException if cannot read from files
      */
     @NotNull
     public static SSTableIndex from(@NotNull final LocalDateTime ts,
-                                    @NotNull final File indexFile,
-                                    @NotNull final File dataFile) throws IOException {
-        final var bytes = Files.readAllBytes(indexFile.toPath());
+                                    @NotNull final Path indexPath,
+                                    @NotNull final Path dataPath) throws IOException {
+
+        final var bytes = Files.readAllBytes(indexPath);
         final var entries = new TreeMap<ByteBuffer, SSTableIndexEntry>();
-        var idx = 0;
-        while (idx < bytes.length) {
-            final var keySize = readIntFromByteArray(bytes, idx);
-            idx += Integer.BYTES;
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        while (buffer.hasRemaining()) {
+            final var keySize = buffer.getInt();
+            final var key = ByteBuffer.allocate(keySize);
+            buffer.get(key.array());
+            final var offset = buffer.getInt();
+            final var size = buffer.getInt();
+            final var deleted = buffer.get() == Byte.MAX_VALUE;
 
-            final var key = ByteBuffer.allocate(keySize)
-                    .put(bytes, idx, keySize)
-                    .position(0);
-            idx += keySize;
-
-            final var offset = readIntFromByteArray(bytes, idx);
-            idx += 4;
-
-            final var size = readIntFromByteArray(bytes, idx);
-            idx += 4;
-
-            final boolean deleted = bytes[idx] == 1;
-            idx += 1;
-
-            final var dataPointer = FileDataPointer.to(dataFile, offset, size);
+            final var dataPointer = FileDataPointer.to(dataPath, offset, size);
             entries.put(key, SSTableIndexEntry.from(key, ts, dataPointer, deleted));
         }
-
         return new SSTableIndex(entries);
     }
 

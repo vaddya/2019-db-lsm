@@ -2,35 +2,37 @@ package ru.mail.polis.vaddya;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
 
-public class FileDataPointer {
-    private final File file;
+import static java.nio.file.StandardOpenOption.READ;
+
+public final class FileDataPointer {
+    private final Path path;
     private final int offset;
     private final int size;
-
-    @NotNull
-    public static FileDataPointer to(@NotNull final File dataFile,
-                                     final int offset,
-                                     final int size) {
-        return new FileDataPointer(dataFile, offset, size);
-    }
 
     /**
      * Creates instance of pointer to data inside file.
      *
-     * @param file   file to read from
-     * @param offset offset inside file
-     * @param size   size of data to read
+     * @param path   path to file to read from
+     * @param offset offset inside the file
+     * @param size   size of the data to read
      */
-    public FileDataPointer(@NotNull final File file,
-                           final int offset,
-                           final int size) {
-        this.file = file;
+    @NotNull
+    public static FileDataPointer to(@NotNull final Path path,
+                                     final int offset,
+                                     final int size) {
+        return new FileDataPointer(path, offset, size);
+    }
+
+    private FileDataPointer(@NotNull final Path path,
+                            final int offset,
+                            final int size) {
+        this.path = path;
         this.offset = offset;
         this.size = size;
     }
@@ -42,8 +44,8 @@ public class FileDataPointer {
      */
     public ByteBuffer read() {
         final var res = ByteBuffer.allocate(size);
-        try (var is = new FileInputStream(file)) {
-            is.getChannel().position(offset).read(res);
+        try (final var channel = FileChannel.open(path, READ)) {
+            channel.position(offset).read(res);
             return res;
         } catch (IOException e) {
             e.printStackTrace();

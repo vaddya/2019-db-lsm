@@ -7,13 +7,13 @@ import ru.mail.polis.Record;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.Iterator;
+import java.util.*;
 
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toSet;
 
@@ -49,10 +49,8 @@ public class DAOImpl implements DAO {
     @NotNull
     private SSTableIndex parseTableIndex(@NotNull final String name) throws IOException {
         final var ts = LocalDateTime.parse(name);
-        final var indexFile = new File(root, name + INDEX_SUFFIX);
-        final var dataFile = new File(root, name + DATA_SUFFIX);
 
-        return SSTableIndex.from(ts, indexFile, dataFile);
+        return SSTableIndex.from(ts, indexPath(name), dataPath(name));
     }
 
     @NotNull
@@ -83,21 +81,18 @@ public class DAOImpl implements DAO {
 
     private void dumpMemTable() throws IOException {
         final var now = LocalDateTime.now().toString();
-
-        final var indexFilename = now + INDEX_SUFFIX;
-        final var indexFile = createFile(indexFilename);
-        final var dataFilename = now + DATA_SUFFIX;
-        final var dataFile = createFile(dataFilename);
-
-        memTable.dumpTo(indexFile, dataFile);
+        final var indexChannel = FileChannel.open(indexPath(now), CREATE_NEW, WRITE);
+        final var dataChannel = FileChannel.open(dataPath(now), CREATE_NEW, WRITE);
+        memTable.dumpTo(indexChannel, dataChannel);
     }
 
     @NotNull
-    private File createFile(@NotNull final String filename) throws IOException {
-        final var file = new File(root, filename);
-        if (!file.createNewFile()) {
-            throw new IOException("Cannot create file: " + file.getAbsolutePath());
-        }
-        return file;
+    private Path indexPath(@NotNull final String name) {
+        return Path.of(root.getAbsolutePath(), name + INDEX_SUFFIX);
+    }
+
+    @NotNull
+    private Path dataPath(@NotNull final String name) {
+        return Path.of(root.getAbsolutePath(), name + DATA_SUFFIX);
     }
 }
