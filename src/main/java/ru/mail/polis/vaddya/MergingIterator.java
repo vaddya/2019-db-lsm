@@ -1,22 +1,20 @@
 package ru.mail.polis.vaddya;
 
-import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import ru.mail.polis.Record;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 
+import static com.google.common.collect.Iterators.mergeSorted;
 import static com.google.common.collect.Iterators.peekingIterator;
 import static java.util.Comparator.comparing;
 
 public class MergingIterator implements Iterator<Record> {
-    private final Collection<PeekingIterator<? extends TableEntry>> iterators = new ArrayList<>();
+    private final PeekingIterator<? extends TableEntry> iterator;
 
     /**
      * Iterator to merge multiple Record providers.
@@ -25,52 +23,41 @@ public class MergingIterator implements Iterator<Record> {
      * @param ssTables list of sorted strings tables
      * @param from     start key
      */
+    @SuppressWarnings("UnstableApiUsage")
     public MergingIterator(@NotNull final MemTable memTable,
                            @NotNull final Collection<SSTableIndex> ssTables,
                            @NotNull final ByteBuffer from) {
+        Collection<Iterator<? extends TableEntry>> iterators = new ArrayList<>();
         iterators.add(peekingIterator(memTable.iteratorFrom(from)));
         ssTables.stream()
                 .map(table -> table.iteratorFrom(from))
-                .map(Iterators::peekingIterator)
                 .forEach(iterators::add);
+
+        iterator = peekingIterator(mergeSorted(iterators, comparing(TableEntry::getKey).thenComparing(TableEntry::ts)));
+
     }
 
     @Override
     public boolean hasNext() {
-        return iterators.stream().anyMatch(Iterator::hasNext);
+        return iterator.hasNext();
     }
 
     @Override
     public Record next() {
-        while (true) {
-            final var next = findNextTableEntry();
-            if (next != null) {
-                return Record.of(next.getKey(), next.getValue().position(0));
+        TableEntry next = iterator.next();
+        while (next.isDeleted()) { // find next non-tombstone
+            next = iterator.next();
+        }
+
+        while (iterator.hasNext() && iterator.peek().getKey().equals(next.getKey())) { // find overrides
+            TableEntry another = iterator.next();
+            if (another.isDeleted()) {
+                next = iterator.next();
+            } else {
+                next = another;
             }
         }
-    }
 
-    @Nullable
-    private TableEntry findNextTableEntry() {
-        final var next = iterators.stream()
-                .filter(Iterator::hasNext)
-                .min(comparing((PeekingIterator<? extends TableEntry> o) -> o.peek().getKey())
-                             .thenComparing(o -> o.peek().ts()))
-                .orElseThrow(NoSuchElementException::new)
-                .next();
-        if (next.isDeleted()) {
-            return null;
-        }
-
-        final var hasNewer = iterators.stream()
-                .filter(Iterator::hasNext)
-                .map(PeekingIterator::peek)
-                .anyMatch(entry -> entry.getKey().equals(next.getKey())
-                                   && entry.ts().isAfter(next.ts()));
-        if (hasNewer) {
-            return null;
-        }
-
-        return next;
+        return Record.of(next.getKey(), next.getValue().position(0));
     }
 }
