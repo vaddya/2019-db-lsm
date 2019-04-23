@@ -17,9 +17,10 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+import static com.google.common.collect.Iterators.peekingIterator;
 import static java.util.Collections.emptyList;
-import static java.util.stream.Collectors.toSet;
 
 public class DAOImpl implements DAO {
     private static final int MEM_TABLE_SIZE = 64 * 1024;
@@ -27,7 +28,7 @@ public class DAOImpl implements DAO {
     private static final String INDEX_SUFFIX = "_index.db";
 
     private final MemTable memTable = new MemTable();
-    private final List<SSTableIndex> ssTables = new ArrayList<>();
+    private final List<SSTable> ssTables = new ArrayList<>();
     private final File root;
 
     /**
@@ -44,24 +45,29 @@ public class DAOImpl implements DAO {
                 .orElse(emptyList())
                 .stream()
                 .map(file -> file.substring(0, file.lastIndexOf('_')))
-                .collect(toSet());
+                .collect(Collectors.toSet());
         for (final var name : names) {
             this.ssTables.add(parseTableIndex(name));
         }
     }
 
     @NotNull
-    private SSTableIndex parseTableIndex(@NotNull final String name) throws IOException {
+    private SSTable parseTableIndex(@NotNull final String name) throws IOException {
         final var ts = LocalDateTime.parse(name);
         final var indexChannel = indexChannel(name, StandardOpenOption.READ);
         final var dataChannel = dataChannel(name, StandardOpenOption.READ);
-        return SSTableIndex.from(ts, indexChannel, dataChannel);
+        return SSTable.from(ts, indexChannel, dataChannel);
     }
 
     @NotNull
     @Override
     public Iterator<Record> iterator(@NotNull final ByteBuffer from) {
-        return new MergingIterator(memTable, ssTables, from);
+        List<Iterator<TableEntry>> iterators = ssTables.stream()
+                .map(table -> table.iteratorFrom(from))
+                .collect(Collectors.toList());
+        iterators.add(peekingIterator(memTable.iteratorFrom(from)));
+
+        return new MergingIterator(iterators);
     }
 
     @Override

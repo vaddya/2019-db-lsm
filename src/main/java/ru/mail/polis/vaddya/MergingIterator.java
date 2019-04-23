@@ -4,9 +4,6 @@ import com.google.common.collect.PeekingIterator;
 import org.jetbrains.annotations.NotNull;
 import ru.mail.polis.Record;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 
 import static com.google.common.collect.Iterators.mergeSorted;
@@ -19,22 +16,11 @@ public class MergingIterator implements Iterator<Record> {
     /**
      * Iterator to merge multiple Record providers.
      *
-     * @param memTable current mem table
-     * @param ssTables list of sorted strings tables
-     * @param from     start key
+     * @param iterators iterators to be merged
      */
     @SuppressWarnings("UnstableApiUsage")
-    public MergingIterator(@NotNull final MemTable memTable,
-                           @NotNull final Collection<SSTableIndex> ssTables,
-                           @NotNull final ByteBuffer from) {
-        Collection<Iterator<? extends TableEntry>> iterators = new ArrayList<>();
-        iterators.add(peekingIterator(memTable.iteratorFrom(from)));
-        ssTables.stream()
-                .map(table -> table.iteratorFrom(from))
-                .forEach(iterators::add);
-
+    public MergingIterator(@NotNull final Iterable<? extends Iterator<TableEntry>> iterators) {
         iterator = peekingIterator(mergeSorted(iterators, comparing(TableEntry::getKey).thenComparing(TableEntry::ts)));
-
     }
 
     @Override
@@ -44,14 +30,14 @@ public class MergingIterator implements Iterator<Record> {
 
     @Override
     public Record next() {
-        TableEntry next = iterator.next();
-        while (next.isDeleted()) { // find next non-tombstone
+        var next = iterator.next();
+        while (next.hasTombstone()) { // find next without tombstone
             next = iterator.next();
         }
 
         while (iterator.hasNext() && iterator.peek().getKey().equals(next.getKey())) { // find overrides
-            TableEntry another = iterator.next();
-            if (another.isDeleted()) {
+            final var another = iterator.next();
+            if (another.hasTombstone()) {
                 next = iterator.next();
             } else {
                 next = another;

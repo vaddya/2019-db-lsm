@@ -10,8 +10,8 @@ import java.util.Iterator;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
-public class MemTable implements Iterable<MemTableEntry> {
-    private final NavigableMap<ByteBuffer, MemTableEntry> table = new TreeMap<>();
+public class MemTable implements Iterable<TableEntry> {
+    private final NavigableMap<ByteBuffer, TableEntry> table = new TreeMap<>();
     private int currentSize;
 
     public int getCurrentSize() {
@@ -20,22 +20,22 @@ public class MemTable implements Iterable<MemTableEntry> {
 
     public void upsert(@NotNull final ByteBuffer key,
                        @NotNull final Record value) {
-        table.put(key, MemTableEntry.upsert(value));
+        table.put(key, TableEntry.upsert(value));
         currentSize += value.getValue().remaining();
     }
 
     public void remove(@NotNull final ByteBuffer key) {
-        table.put(key, MemTableEntry.delete(key));
+        table.put(key, TableEntry.delete(key));
     }
 
     @NotNull
     @Override
-    public Iterator<MemTableEntry> iterator() {
+    public Iterator<TableEntry> iterator() {
         return table.values().iterator();
     }
 
     @NotNull
-    public Iterator<MemTableEntry> iteratorFrom(@NotNull final ByteBuffer from) {
+    public Iterator<TableEntry> iteratorFrom(@NotNull final ByteBuffer from) {
         return table.tailMap(from).values().iterator();
     }
 
@@ -58,8 +58,8 @@ public class MemTable implements Iterable<MemTableEntry> {
         currentSize = 0;
     }
 
-    private ByteBuffer dataToBytes(@NotNull final MemTableEntry entry) {
-        return entry.getValue(); // TODO: maybe need also to save key to data file
+    private ByteBuffer dataToBytes(@NotNull final TableEntry entry) {
+        return entry.getValue().duplicate(); // TODO: maybe need also to save key to data file
     }
 
     /**
@@ -74,7 +74,7 @@ public class MemTable implements Iterable<MemTableEntry> {
      * </ul></p>
      */
     @NotNull
-    private ByteBuffer indexToBytes(@NotNull final MemTableEntry entry,
+    private ByteBuffer indexToBytes(@NotNull final TableEntry entry,
                                     final int dataOffset) {
         final var keySize = entry.getKey().remaining();
         final var valueSize = entry.getValue().remaining();
@@ -84,7 +84,7 @@ public class MemTable implements Iterable<MemTableEntry> {
                 .put(entry.getKey().duplicate())
                 .putInt(dataOffset)
                 .putInt(valueSize)
-                .put(entry.isDeleted() ? Byte.MAX_VALUE : Byte.MIN_VALUE)
+                .put(entry.hasTombstone() ? Byte.MAX_VALUE : Byte.MIN_VALUE)
                 .flip();
     }
 }

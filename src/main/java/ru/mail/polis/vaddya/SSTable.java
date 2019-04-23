@@ -12,8 +12,8 @@ import java.util.TreeMap;
 
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 
-public final class SSTableIndex implements Iterable<SSTableIndexEntry> {
-    private final NavigableMap<ByteBuffer, SSTableIndexEntry> entries;
+public final class SSTable implements Iterable<TableEntry> {
+    private final NavigableMap<ByteBuffer, TableEntry> entries;
 
     /**
      * Create sorted strings table index using timestamp,
@@ -26,10 +26,10 @@ public final class SSTableIndex implements Iterable<SSTableIndexEntry> {
      * @throws IOException if cannot read from files
      */
     @NotNull
-    public static SSTableIndex from(@NotNull final LocalDateTime ts,
-                                    @NotNull final FileChannel indexPath,
-                                    @NotNull final FileChannel dataPath) throws IOException {
-        final var entries = new TreeMap<ByteBuffer, SSTableIndexEntry>();
+    public static SSTable from(@NotNull final LocalDateTime ts,
+                               @NotNull final FileChannel indexPath,
+                               @NotNull final FileChannel dataPath) throws IOException {
+        final var entries = new TreeMap<ByteBuffer, TableEntry>();
         final var buffer = ByteBuffer.allocate((int) indexPath.size());
         indexPath.read(buffer);
         buffer.flip();
@@ -39,26 +39,26 @@ public final class SSTableIndex implements Iterable<SSTableIndexEntry> {
             buffer.get(key.array());
             final var offset = buffer.getInt();
             final var size = buffer.getInt();
-            final var deleted = buffer.get() == Byte.MAX_VALUE;
+            final var hasTombstone = buffer.get() == Byte.MAX_VALUE;
 
             final var value = dataPath.map(READ_ONLY, offset, size);
-            entries.put(key, SSTableIndexEntry.from(key, value, ts, deleted));
+            entries.put(key, TableEntry.from(key, value, hasTombstone, ts));
         }
-        return new SSTableIndex(entries);
+        return new SSTable(entries);
     }
 
-    private SSTableIndex(@NotNull final NavigableMap<ByteBuffer, SSTableIndexEntry> entries) {
+    private SSTable(@NotNull final NavigableMap<ByteBuffer, TableEntry> entries) {
         this.entries = entries;
     }
 
     @NotNull
-    public Iterator<SSTableIndexEntry> iteratorFrom(@NotNull final ByteBuffer from) {
+    public Iterator<TableEntry> iteratorFrom(@NotNull final ByteBuffer from) {
         return entries.tailMap(from).values().iterator();
     }
 
     @NotNull
     @Override
-    public Iterator<SSTableIndexEntry> iterator() {
+    public Iterator<TableEntry> iterator() {
         return entries.values().iterator();
     }
 }
