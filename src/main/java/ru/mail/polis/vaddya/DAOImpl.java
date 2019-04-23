@@ -62,7 +62,7 @@ public class DAOImpl implements DAO {
     @NotNull
     @Override
     public Iterator<Record> iterator(@NotNull final ByteBuffer from) {
-        List<Iterator<TableEntry>> iterators = ssTables.stream()
+        final var iterators = ssTables.stream()
                 .map(table -> table.iteratorFrom(from))
                 .collect(Collectors.toList());
         iterators.add(peekingIterator(memTable.iteratorFrom(from)));
