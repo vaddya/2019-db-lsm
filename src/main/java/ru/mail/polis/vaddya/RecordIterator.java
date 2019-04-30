@@ -11,19 +11,19 @@ import static com.google.common.collect.Iterators.mergeSorted;
 import static java.util.Comparator.comparing;
 import static ru.mail.polis.Iters.collapseEquals;
 
-public class MergingCollapseEqualsIterator implements Iterator<Record> {
+public class RecordIterator implements Iterator<Record> {
     private static final Comparator<TableEntry> comparator = comparing(TableEntry::getKey)
             .thenComparing(comparing(TableEntry::ts).reversed());
 
-    private final Iterator<? extends TableEntry> iterator;
+    private final Iterator<TableEntry> iterator;
 
     /**
-     * Iterator to merge multiple Record providers.
+     * Iterator to merge multiple Record providers & collapse equal keys.
      *
      * @param iterators iterators to be merged
      */
     @SuppressWarnings("UnstableApiUsage")
-    public MergingCollapseEqualsIterator(@NotNull final Iterable<? extends Iterator<TableEntry>> iterators) {
+    public RecordIterator(@NotNull final Iterable<Iterator<TableEntry>> iterators) {
         iterator = collapseEquals(mergeSorted(iterators, comparator));
     }
 
@@ -38,6 +38,6 @@ public class MergingCollapseEqualsIterator implements Iterator<Record> {
         if (next.hasTombstone()) {
             throw new NoSuchElementException();
         }
-        return Record.of(next.getKey(), next.getValue().position(0));
+        return Record.of(next.getKey(), next.getValue());
     }
 }

@@ -4,10 +4,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
 
-public final class ByteUtils {
+public final class ByteBufferUtils {
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
 
-    private ByteUtils() {
+    private ByteBufferUtils() {
     }
 
     @NotNull

@@ -1,41 +1,42 @@
 package ru.mail.polis.vaddya;
 
 import org.jetbrains.annotations.NotNull;
-import ru.mail.polis.Record;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
-import java.time.LocalDateTime;
 
-import static ru.mail.polis.vaddya.ByteUtils.emptyBuffer;
+import static ru.mail.polis.vaddya.ByteBufferUtils.emptyBuffer;
 
 public final class TableEntry {
     private final ByteBuffer key;
+    @Nullable
     private final ByteBuffer value;
     private final boolean hasTombstone;
-    private final LocalDateTime ts;
+    private final long ts;
 
     @NotNull
-    public static TableEntry upsert(@NotNull final Record record) {
-        return new TableEntry(record.getKey(), record.getValue(), false, LocalDateTime.now());
+    public static TableEntry upsert(@NotNull final ByteBuffer key,
+                                    @NotNull final ByteBuffer value) {
+        return new TableEntry(key, value, false, System.currentTimeMillis());
     }
 
     @NotNull
     public static TableEntry delete(@NotNull final ByteBuffer key) {
-        return new TableEntry(key, emptyBuffer(), true, LocalDateTime.now());
+        return new TableEntry(key, emptyBuffer(), true, System.currentTimeMillis());
     }
 
     @NotNull
     public static TableEntry from(@NotNull final ByteBuffer key,
-                                  @NotNull final ByteBuffer value,
+                                  @Nullable final ByteBuffer value,
                                   final boolean hasTombstone,
-                                  @NotNull final LocalDateTime ts) {
+                                  final long ts) {
         return new TableEntry(key, value, hasTombstone, ts);
     }
 
     private TableEntry(@NotNull final ByteBuffer key,
-                       @NotNull final ByteBuffer value,
+                       @Nullable final ByteBuffer value,
                        final boolean hasTombstone,
-                       @NotNull final LocalDateTime ts) {
+                       final long ts) {
         this.key = key;
         this.value = value;
         this.hasTombstone = hasTombstone;
@@ -49,6 +50,9 @@ public final class TableEntry {
 
     @NotNull
     public ByteBuffer getValue() {
+        if (value == null) {
+            throw new IllegalArgumentException("Value is absent");
+        }
         return value;
     }
 
@@ -56,8 +60,7 @@ public final class TableEntry {
         return hasTombstone;
     }
 
-    @NotNull
-    public LocalDateTime ts() {
+    public long ts() {
         return ts;
     }
 }

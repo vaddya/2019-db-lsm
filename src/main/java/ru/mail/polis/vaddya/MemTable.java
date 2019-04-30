@@ -1,7 +1,6 @@
 package ru.mail.polis.vaddya;
 
 import org.jetbrains.annotations.NotNull;
-import ru.mail.polis.Record;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -10,56 +9,54 @@ import java.util.Iterator;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
-public class MemTable implements Iterable<TableEntry> {
+public class MemTable implements Table {
     private final NavigableMap<ByteBuffer, TableEntry> table = new TreeMap<>();
     private int currentSize;
 
-    public int getCurrentSize() {
-        return currentSize;
+    @NotNull
+    public Iterator<TableEntry> iterator(@NotNull final ByteBuffer from) {
+        return table.tailMap(from).values().iterator();
     }
 
+    @Override
     public void upsert(@NotNull final ByteBuffer key,
-                       @NotNull final Record value) {
-        table.put(key, TableEntry.upsert(value));
-        currentSize += value.getValue().remaining();
+                       @NotNull final ByteBuffer value) {
+        table.put(key, TableEntry.upsert(key, value));
+        currentSize += value.remaining();
     }
 
     public void remove(@NotNull final ByteBuffer key) {
         table.put(key, TableEntry.delete(key));
     }
 
-    @NotNull
-    @Override
-    public Iterator<TableEntry> iterator() {
-        return table.values().iterator();
-    }
-
-    @NotNull
-    public Iterator<TableEntry> iteratorFrom(@NotNull final ByteBuffer from) {
-        return table.tailMap(from).values().iterator();
+    public int getCurrentSize() {
+        return currentSize;
     }
 
     /**
      * Dump current mem table to specified files.
      *
-     * @param indexFile file to store index
-     * @param dataFile  file to store data
+     * @param channel file to store index
      * @throws IOException if cannot write data
      */
-    public void dumpTo(@NotNull final FileChannel indexFile,
-                       @NotNull final FileChannel dataFile) throws IOException {
+    public void flushTo(@NotNull final FileChannel channel) throws IOException {
+        final var offsetsBuffer = ByteBuffer.allocate(table.size() * Integer.BYTES);
         var offset = 0;
         for (final var entry : table.values()) {
-            dataFile.write(dataToBytes(entry));
-            indexFile.write(indexToBytes(entry, offset));
-            offset += entry.getValue().remaining();
+            offsetsBuffer.putInt(offset);
+            final var buffer = entryToByteBuffer(entry);
+            offset += buffer.remaining();
+            channel.write(buffer);
         }
+        channel.write(offsetsBuffer.flip());
+
+        final var sizeBuffer = ByteBuffer.allocate(Integer.BYTES)
+                .putInt(table.size())
+                .flip();
+        channel.write(sizeBuffer);
+
         table.clear();
         currentSize = 0;
-    }
-
-    private ByteBuffer dataToBytes(@NotNull final TableEntry entry) {
-        return entry.getValue().duplicate(); // TODO: maybe need also to save key to data file
     }
 
     /**
@@ -68,23 +65,30 @@ public class MemTable implements Iterable<TableEntry> {
      * <ul>
      * <li> Size of the key (4 bytes)
      * <li> Key of the entry (N bytes)
-     * <li> Offset inside data file (4 bytes)
-     * <li> Size of the value inside data file (4 bytes)
-     * <li> Tombstone - a marker indicates that value was deleted (1 byte)
-     * </ul></p>
+     * <li> Timestamp, if negative then it is a tombstone and nether value size nor value itself are present
+     * <li> Size of the value (4 bytes)
+     * <li> Value of the entry (M bytes)
+     * </ul>
      */
     @NotNull
-    private ByteBuffer indexToBytes(@NotNull final TableEntry entry,
-                                    final int dataOffset) {
+    private ByteBuffer entryToByteBuffer(@NotNull final TableEntry entry) {
         final var keySize = entry.getKey().remaining();
         final var valueSize = entry.getValue().remaining();
 
-        return ByteBuffer.allocate(keySize + Integer.BYTES * 3 + Byte.BYTES)
+        if (entry.hasTombstone()) {
+            return ByteBuffer.allocate(Integer.BYTES + keySize + Long.BYTES)
+                    .putInt(keySize)
+                    .put(entry.getKey())
+                    .putLong(-entry.ts())
+                    .flip();
+        }
+
+        return ByteBuffer.allocate(Integer.BYTES + keySize + Long.BYTES + Integer.BYTES + valueSize)
                 .putInt(keySize)
-                .put(entry.getKey().duplicate())
-                .putInt(dataOffset)
+                .put(entry.getKey())
+                .putLong(entry.ts())
                 .putInt(valueSize)
-                .put(entry.hasTombstone() ? Byte.MAX_VALUE : Byte.MIN_VALUE)
+                .put(entry.getValue())
                 .flip();
     }
 }
