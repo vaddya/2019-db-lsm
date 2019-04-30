@@ -67,7 +67,7 @@ public class DAOImpl implements DAO {
                 .collect(Collectors.toList());
         iterators.add(peekingIterator(memTable.iteratorFrom(from)));
 
-        return new MergingIterator(iterators);
+        return new MergingCollapseEqualsIterator(iterators);
     }
 
     @Override
