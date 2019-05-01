@@ -52,6 +52,7 @@ public final class SSTable implements Table {
         this.offsets = offsets;
     }
 
+    @Override
     @NotNull
     public Iterator<TableEntry> iterator(@NotNull final ByteBuffer from) {
         return new Iterator<>() {

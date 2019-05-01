@@ -13,6 +13,7 @@ public class MemTable implements Table {
     private final NavigableMap<ByteBuffer, TableEntry> table = new TreeMap<>();
     private int currentSize;
 
+    @Override
     @NotNull
     public Iterator<TableEntry> iterator(@NotNull final ByteBuffer from) {
         return table.tailMap(from).values().iterator();
@@ -25,6 +26,7 @@ public class MemTable implements Table {
         currentSize += value.remaining();
     }
 
+    @Override
     public void remove(@NotNull final ByteBuffer key) {
         table.put(key, TableEntry.delete(key));
     }

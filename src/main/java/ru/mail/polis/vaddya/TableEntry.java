@@ -49,7 +49,7 @@ public final class TableEntry {
     }
 
     /**
-     * Get the value
+     * Get the value.
      *
      * @throws IllegalArgumentException if value is absent
      */
