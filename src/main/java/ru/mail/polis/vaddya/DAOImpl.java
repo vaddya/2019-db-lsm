@@ -8,9 +8,17 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
@@ -44,7 +52,7 @@ public class DAOImpl implements DAO {
 
     @NotNull
     private SSTable parseSSTable(@NotNull final String name) throws IOException {
-        try (final var channel = openChannel(name, StandardOpenOption.READ)) {
+        try (var channel = openChannel(name, StandardOpenOption.READ)) {
             return SSTable.from(channel);
         }
     }
@@ -82,7 +90,7 @@ public class DAOImpl implements DAO {
     private void flushMemTable() throws IOException {
         final var now = LocalDateTime.now().toString();
         final var tempName = now + TEMP_SUFFIX;
-        try (final var channel = openChannel(tempName, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+        try (var channel = openChannel(tempName, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
             memTable.flushTo(channel);
         }
         final var finalName = now + FINAL_SUFFIX;

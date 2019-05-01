@@ -48,6 +48,11 @@ public final class TableEntry {
         return key;
     }
 
+    /**
+     * Get the value
+     *
+     * @throws IllegalArgumentException if value is absent
+     */
     @NotNull
     public ByteBuffer getValue() {
         if (value == null) {

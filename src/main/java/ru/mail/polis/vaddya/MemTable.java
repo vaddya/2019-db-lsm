@@ -61,6 +61,7 @@ public class MemTable implements Table {
 
     /**
      * Create and fill ByteBuffer from MemTable entry.
+     *
      * <p>ByteBuffer contains:
      * <ul>
      * <li> Size of the key (4 bytes)
@@ -73,8 +74,6 @@ public class MemTable implements Table {
     @NotNull
     private ByteBuffer entryToByteBuffer(@NotNull final TableEntry entry) {
         final var keySize = entry.getKey().remaining();
-        final var valueSize = entry.getValue().remaining();
-
         if (entry.hasTombstone()) {
             return ByteBuffer.allocate(Integer.BYTES + keySize + Long.BYTES)
                     .putInt(keySize)
@@ -83,6 +82,7 @@ public class MemTable implements Table {
                     .flip();
         }
 
+        final var valueSize = entry.getValue().remaining();
         return ByteBuffer.allocate(Integer.BYTES + keySize + Long.BYTES + Integer.BYTES + valueSize)
                 .putInt(keySize)
                 .put(entry.getKey())
