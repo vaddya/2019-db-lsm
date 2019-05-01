@@ -30,7 +30,7 @@ public class DAOImpl implements DAO {
     private final MemTable memTable = new MemTable();
     private final List<SSTable> ssTables = new ArrayList<>();
     private final File root;
-    private final long flushThreshold;
+    private final long flushThresholdBytes;
 
     /**
      * Creates persistent DAO.
@@ -38,9 +38,9 @@ public class DAOImpl implements DAO {
      * @param root folder to save data
      * @throws IOException if cannot read saved data
      */
-    public DAOImpl(@NotNull final File root, final long flushThreshold) throws IOException {
+    public DAOImpl(@NotNull final File root, final long flushThresholdBytes) throws IOException {
         this.root = root;
-        this.flushThreshold = flushThreshold;
+        this.flushThresholdBytes = flushThresholdBytes;
 
         final var names = Optional.ofNullable(root.list())
                 .map(Arrays::asList)
@@ -72,14 +72,17 @@ public class DAOImpl implements DAO {
     public void upsert(@NotNull final ByteBuffer key,
                        @NotNull final ByteBuffer value) throws IOException {
         memTable.upsert(key.duplicate().asReadOnlyBuffer(), value.duplicate().asReadOnlyBuffer());
-        if (memTable.getCurrentSize() > flushThreshold) {
+        if (memTable.getCurrentSize() > flushThresholdBytes) {
             flushMemTable();
         }
     }
 
     @Override
-    public void remove(@NotNull final ByteBuffer key) {
+    public void remove(@NotNull final ByteBuffer key) throws IOException {
         memTable.remove(key.duplicate().asReadOnlyBuffer());
+        if (memTable.getCurrentSize() > flushThresholdBytes) {
+            flushMemTable();
+        }
     }
 
     @Override

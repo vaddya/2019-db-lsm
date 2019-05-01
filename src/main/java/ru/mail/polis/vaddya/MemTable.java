@@ -23,12 +23,13 @@ public class MemTable implements Table {
     public void upsert(@NotNull final ByteBuffer key,
                        @NotNull final ByteBuffer value) {
         table.put(key, TableEntry.upsert(key, value));
-        currentSize += value.remaining();
+        currentSize += Integer.BYTES + key.remaining() + Long.BYTES + Integer.BYTES + value.remaining();
     }
 
     @Override
     public void remove(@NotNull final ByteBuffer key) {
         table.put(key, TableEntry.delete(key));
+        currentSize += Integer.BYTES + key.remaining() + Long.BYTES;
     }
 
     public int getCurrentSize() {
