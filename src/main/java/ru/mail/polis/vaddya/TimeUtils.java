@@ -1,8 +1,8 @@
 package ru.mail.polis.vaddya;
 
 public final class TimeUtils {
-    private static volatile int COUNTER = 0;
-    private static volatile long LAST_MILLIS = 0L;
+    private static volatile int COUNTER;
+    private static volatile long LAST_MILLIS;
 
     private TimeUtils() {
     }
@@ -10,12 +10,14 @@ public final class TimeUtils {
     /**
      * Emulate current time in nanoseconds using System.currentTimeMillis and atomic counter
      */
-    public static synchronized long currentTimeNanos() {
-        final var millis = System.currentTimeMillis();
-        if (LAST_MILLIS != millis) {
-            LAST_MILLIS = millis;
-            COUNTER = 0;
+    public static long currentTimeNanos() {
+        synchronized (TimeUtils.class) {
+            final var millis = System.currentTimeMillis();
+            if (LAST_MILLIS != millis) {
+                LAST_MILLIS = millis;
+                COUNTER = 0;
+            }
+            return LAST_MILLIS * 1_000_000 + COUNTER++;
         }
-        return LAST_MILLIS * 1_000_000 + COUNTER++;
     }
 }
