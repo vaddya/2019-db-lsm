@@ -69,7 +69,7 @@ public class MemTable implements Table {
      * <ul>
      * <li> Size of the key (4 bytes)
      * <li> Key of the entry (N bytes)
-     * <li> Timestamp, if negative then it is a tombstone and nether value size nor value itself are present
+     * <li> Timestamp (8 bytes), if negative then it is a tombstone and neither value size nor value itself is present
      * <li> Size of the value (4 bytes)
      * <li> Value of the entry (M bytes)
      * </ul>
