@@ -6,6 +6,7 @@ import org.jetbrains.annotations.Nullable;
 import java.nio.ByteBuffer;
 
 import static ru.mail.polis.vaddya.ByteBufferUtils.emptyBuffer;
+import static ru.mail.polis.vaddya.TimeUtils.currentTimeNanos;
 
 public final class TableEntry {
     private final ByteBuffer key;
@@ -17,12 +18,12 @@ public final class TableEntry {
     @NotNull
     public static TableEntry upsert(@NotNull final ByteBuffer key,
                                     @NotNull final ByteBuffer value) {
-        return new TableEntry(key, value, false, System.currentTimeMillis());
+        return new TableEntry(key, value, false, currentTimeNanos());
     }
 
     @NotNull
     public static TableEntry delete(@NotNull final ByteBuffer key) {
-        return new TableEntry(key, emptyBuffer(), true, System.currentTimeMillis());
+        return new TableEntry(key, emptyBuffer(), true, currentTimeNanos());
     }
 
     @NotNull
