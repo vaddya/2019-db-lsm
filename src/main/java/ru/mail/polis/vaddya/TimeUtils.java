@@ -14,7 +14,7 @@ public final class TimeUtils {
      * Emulate current time in nanoseconds using System.currentTimeMillis and atomic counter
      */
     public static long currentTimeNanos() {
-        long millis = System.currentTimeMillis(); // 100
+        final var millis = System.currentTimeMillis(); // 100
         if (LAST_MILLIS.get() != millis) {
             LAST_MILLIS.set(millis);
             COUNTER.set(0);
