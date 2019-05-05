@@ -1,7 +1,9 @@
 package ru.mail.polis.vaddya;
 
+import com.google.common.collect.Iterators;
 import org.jetbrains.annotations.NotNull;
 import ru.mail.polis.DAO;
+import ru.mail.polis.Iters;
 import ru.mail.polis.Record;
 
 import java.io.File;
@@ -61,13 +63,17 @@ public class DAOImpl implements DAO {
 
     @NotNull
     @Override
+    @SuppressWarnings("UnstableApiUsage")
     public Iterator<Record> iterator(@NotNull final ByteBuffer from) {
         final var iterators = ssTables.stream()
                 .map(table -> table.iterator(from))
                 .collect(toList());
         iterators.add(memTable.iterator(from));
 
-        return new RecordIterator(iterators);
+        final var merged = Iterators.mergeSorted(iterators, TableEntry.COMPARATOR);
+        final var collapsed = Iters.collapseEquals(merged, TableEntry::getKey);
+        final var filtered = Iterators.filter(collapsed, e -> !e.hasTombstone());
+        return Iterators.transform(filtered, e -> Record.of(e.getKey(), e.getValue()));
     }
 
     @Override
@@ -89,7 +95,9 @@ public class DAOImpl implements DAO {
 
     @Override
     public void close() throws IOException {
-        flushMemTable();
+        if (memTable.getCurrentSize() > 0) {
+            flushMemTable();
+        }
     }
 
     private void flushMemTable() throws IOException {

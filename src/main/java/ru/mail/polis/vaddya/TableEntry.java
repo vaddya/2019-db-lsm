@@ -4,11 +4,17 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
+import java.util.Comparator;
 
+import static java.util.Comparator.comparing;
+import static java.util.Comparator.reverseOrder;
 import static ru.mail.polis.vaddya.ByteBufferUtils.emptyBuffer;
 import static ru.mail.polis.vaddya.TimeUtils.currentTimeNanos;
 
-public final class TableEntry {
+public final class TableEntry implements Comparable<TableEntry> {
+    static final Comparator<TableEntry> COMPARATOR = comparing(TableEntry::getKey)
+            .thenComparing(TableEntry::ts, reverseOrder());
+
     private final ByteBuffer key;
     @Nullable
     private final ByteBuffer value;
@@ -44,6 +50,9 @@ public final class TableEntry {
         this.ts = ts;
     }
 
+    /**
+     * Get the key.
+     */
     @NotNull
     public ByteBuffer getKey() {
         return key;
@@ -62,11 +71,22 @@ public final class TableEntry {
         return value;
     }
 
+    /**
+     * Get the tombstone, if true then the value is absent.
+     */
     public boolean hasTombstone() {
         return hasTombstone;
     }
 
+    /**
+     * Get the entry timestamp in nanos
+     */
     public long ts() {
         return ts;
+    }
+
+    @Override
+    public int compareTo(@NotNull final TableEntry o) {
+        return COMPARATOR.compare(this, o);
     }
 }
