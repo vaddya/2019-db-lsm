@@ -44,9 +44,9 @@ class PersistenceTest extends TestBase {
 
         // Create, fill and remove storage
         try {
-            final DAO dao = DAOFactory.create(data);
-            dao.upsert(key, randomValue());
-            dao.close();
+            try (DAO dao = DAOFactory.create(data)) {
+                dao.upsert(key, randomValue());
+            }
         } finally {
             Files.recursiveDelete(data);
         }
@@ -54,8 +54,9 @@ class PersistenceTest extends TestBase {
         // Check that the storage is empty
         assertFalse(data.exists());
         assertTrue(data.mkdir());
-        final DAO dao = DAOFactory.create(data);
-        assertThrows(NoSuchElementException.class, () -> dao.get(key));
+        try (DAO dao = DAOFactory.create(data)) {
+            assertThrows(NoSuchElementException.class, () -> dao.get(key));
+        }
     }
 
     @Test
@@ -65,12 +66,14 @@ class PersistenceTest extends TestBase {
         final ByteBuffer value = randomValue();
 
         // Create, fill and close storage
-        DAO dao = DAOFactory.create(data);
-        dao.upsert(key, value);
-        dao.close();
+        try (DAO dao = DAOFactory.create(data)) {
+            dao.upsert(key, value);
+        }
+
         // Recreate dao
-        dao = DAOFactory.create(data);
-        assertEquals(value, dao.get(key));
+        try (DAO dao = DAOFactory.create(data)) {
+            assertEquals(value, dao.get(key));
+        }
     }
 
     @Test
@@ -79,20 +82,23 @@ class PersistenceTest extends TestBase {
         final ByteBuffer key = randomKey();
         final ByteBuffer value = randomValue();
 
-        //create dao and fill data
-        DAO dao = DAOFactory.create(data);
-        dao.upsert(key, value);
-        //flush data
-        dao.close();
-        //load data and check
-        dao = DAOFactory.create(data);
-        assertEquals(value, dao.get(key));
-        //remove data and flush
-        dao.remove(key);
-        dao.close();
-        //load and check not found
-        DAO finalDao = DAOFactory.create(data);
-        assertThrows(NoSuchElementException.class, () -> finalDao.get(key));
+        // Create dao and fill data
+        try (DAO dao = DAOFactory.create(data)) {
+            dao.upsert(key, value);
+        }
+
+        // Load data and check
+        try (DAO dao = DAOFactory.create(data)) {
+            assertEquals(value, dao.get(key));
+
+            // Remove data and flush
+            dao.remove(key);
+        }
+
+        // Load and check not found
+        try (DAO dao = DAOFactory.create(data)) {
+            assertThrows(NoSuchElementException.class, () -> dao.get(key));
+        }
     }
 
     @Test
@@ -102,25 +108,24 @@ class PersistenceTest extends TestBase {
         final ByteBuffer value2 = randomValue();
 
         // Initial insert
-        DAO dao = DAOFactory.create(data);
-        dao.upsert(key, value);
-        assertEquals(value, dao.get(key));
+        try (DAO dao = DAOFactory.create(data)) {
+            dao.upsert(key, value);
+            assertEquals(value, dao.get(key));
+        }
 
         // Reopen
-        dao.close();
-        dao = DAOFactory.create(data);
-
-        // Check and replace
-        assertEquals(value, dao.get(key));
-        dao.upsert(key, value2);
-        assertEquals(value2, dao.get(key));
+        try (DAO dao = DAOFactory.create(data)) {
+            // Check and replace
+            assertEquals(value, dao.get(key));
+            dao.upsert(key, value2);
+            assertEquals(value2, dao.get(key));
+        }
 
         // Reopen
-        dao.close();
-        dao = DAOFactory.create(data);
-
-        // Last value should win
-        assertEquals(value2, dao.get(key));
+        try (DAO dao = DAOFactory.create(data)) {
+            // Last value should win
+            assertEquals(value2, dao.get(key));
+        }
     }
 
     @Test
@@ -132,18 +137,40 @@ class PersistenceTest extends TestBase {
         final Collection<ByteBuffer> keys = new ArrayList<>(values);
 
         // Create, fill and close storage
-        DAO dao = DAOFactory.create(data);
-        for (int i = 0; i < values; i++) {
-            final ByteBuffer key = randomKey();
-            keys.add(key);
-            dao.upsert(key, join(key, value));
+        try (DAO dao = DAOFactory.create(data)) {
+            for (int i = 0; i < values; i++) {
+                final ByteBuffer key = randomKey();
+                keys.add(key);
+                dao.upsert(key, join(key, value));
+            }
         }
-        dao.close();
 
         // Recreate dao and check contents
-        dao = DAOFactory.create(data);
-        for (final ByteBuffer key : keys) {
-            assertEquals(join(key, value), dao.get(key));
+        try (DAO dao = DAOFactory.create(data)) {
+            for (final ByteBuffer key : keys) {
+                assertEquals(join(key, value), dao.get(key));
+            }
+        }
+    }
+
+    @Test
+    void burn(@TempDir File data) throws IOException {
+        // Fixed key
+        final ByteBuffer key = randomKey();
+
+        // Overwrite key multiple times
+        final int overwrites = 100;
+        for (int i = 0; i < overwrites; i++) {
+            // Overwrite
+            final ByteBuffer value = randomValue();
+            try (DAO dao = DAOFactory.create(data)) {
+                dao.upsert(key, value);
+            }
+
+            // Check
+            try (DAO dao = DAOFactory.create(data)) {
+                assertEquals(value, dao.get(key));
+            }
         }
     }
 }
