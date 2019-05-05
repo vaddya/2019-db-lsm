@@ -79,7 +79,7 @@ public final class TableEntry implements Comparable<TableEntry> {
     }
 
     /**
-     * Get the entry timestamp in nanos
+     * Get the entry timestamp in nanos.
      */
     public long ts() {
         return ts;
