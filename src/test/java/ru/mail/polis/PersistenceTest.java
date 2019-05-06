@@ -16,6 +16,7 @@
 
 package ru.mail.polis;
 
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -101,7 +102,7 @@ class PersistenceTest extends TestBase {
         }
     }
 
-    @Test
+    @RepeatedTest(1000)
     void replaceWithClose(@TempDir File data) throws Exception {
         final ByteBuffer key = randomKey();
         final ByteBuffer value = randomValue();
