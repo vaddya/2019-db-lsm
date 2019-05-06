@@ -1,8 +1,8 @@
 package ru.mail.polis.vaddya;
 
 public final class TimeUtils {
-    private static volatile int COUNTER;
-    private static volatile long LAST_MILLIS;
+    private static int COUNTER;
+    private static long LAST_MILLIS;
 
     private TimeUtils() {
     }
