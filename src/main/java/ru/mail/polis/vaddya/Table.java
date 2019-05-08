@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 
-public interface Table {
+interface Table {
     /**
      * Get iterator over the table starting from the given key.
      */

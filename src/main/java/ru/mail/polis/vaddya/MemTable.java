@@ -9,7 +9,7 @@ import java.util.Iterator;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
-public class MemTable implements Table {
+final class MemTable implements Table {
     private final NavigableMap<ByteBuffer, TableEntry> table = new TreeMap<>();
     private int currentSize;
 

@@ -11,7 +11,7 @@ import static java.util.Comparator.reverseOrder;
 import static ru.mail.polis.vaddya.ByteBufferUtils.emptyBuffer;
 import static ru.mail.polis.vaddya.TimeUtils.currentTimeNanos;
 
-public final class TableEntry implements Comparable<TableEntry> {
+final class TableEntry implements Comparable<TableEntry> {
     static final Comparator<TableEntry> COMPARATOR = comparing(TableEntry::getKey)
             .thenComparing(TableEntry::ts, reverseOrder());
 

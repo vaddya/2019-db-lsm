@@ -11,7 +11,7 @@ import java.util.Iterator;
 import static java.nio.ByteOrder.BIG_ENDIAN;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 
-public final class SSTable implements Table {
+final class SSTable implements Table {
     static final int MAGIC = 0xCAFEFEED;
 
     private final int entriesCount;
