@@ -39,7 +39,9 @@ public class DAOImpl implements DAO {
      * @param root folder to save and read data from
      * @throws UncheckedIOException if cannot open or read SSTables
      */
-    public DAOImpl(@NotNull final File root, final long flushThresholdInBytes) {
+    public DAOImpl(
+            @NotNull final File root,
+            final long flushThresholdInBytes) {
         this.root = root;
         this.flushThresholdInBytes = flushThresholdInBytes;
         this.ssTables = Optional.ofNullable(root.list())
@@ -80,8 +82,9 @@ public class DAOImpl implements DAO {
     }
 
     @Override
-    public void upsert(@NotNull final ByteBuffer key,
-                       @NotNull final ByteBuffer value) throws IOException {
+    public void upsert(
+            @NotNull final ByteBuffer key,
+            @NotNull final ByteBuffer value) throws IOException {
         memTable.upsert(key.duplicate().asReadOnlyBuffer(), value.duplicate().asReadOnlyBuffer());
         if (memTable.getCurrentSize() > flushThresholdInBytes) {
             flushMemTable();

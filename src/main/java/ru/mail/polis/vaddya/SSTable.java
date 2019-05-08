@@ -59,9 +59,10 @@ final class SSTable implements Table {
         }
     }
 
-    private SSTable(final int entriesCount,
-                    @NotNull final IntBuffer offsets,
-                    @NotNull final ByteBuffer entries) {
+    private SSTable(
+            final int entriesCount,
+            @NotNull final IntBuffer offsets,
+            @NotNull final ByteBuffer entries) {
         this.entriesCount = entriesCount;
         this.entries = entries;
         this.offsets = offsets;
@@ -86,8 +87,9 @@ final class SSTable implements Table {
     }
 
     @Override
-    public void upsert(@NotNull final ByteBuffer key,
-                       @NotNull final ByteBuffer value) {
+    public void upsert(
+            @NotNull final ByteBuffer key,
+            @NotNull final ByteBuffer value) {
         throw new UnsupportedOperationException("SSTable is immutable");
     }
 

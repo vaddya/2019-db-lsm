@@ -22,28 +22,32 @@ final class TableEntry implements Comparable<TableEntry> {
     private final long ts;
 
     @NotNull
-    public static TableEntry upsert(@NotNull final ByteBuffer key,
-                                    @NotNull final ByteBuffer value) {
+    public static TableEntry upsert(
+            @NotNull final ByteBuffer key,
+            @NotNull final ByteBuffer value) {
         return new TableEntry(key, value, false, currentTimeNanos());
     }
 
     @NotNull
-    public static TableEntry delete(@NotNull final ByteBuffer key) {
+    public static TableEntry delete(
+            @NotNull final ByteBuffer key) {
         return new TableEntry(key, emptyBuffer(), true, currentTimeNanos());
     }
 
     @NotNull
-    public static TableEntry from(@NotNull final ByteBuffer key,
-                                  @Nullable final ByteBuffer value,
-                                  final boolean hasTombstone,
-                                  final long ts) {
+    public static TableEntry from(
+            @NotNull final ByteBuffer key,
+            @Nullable final ByteBuffer value,
+            final boolean hasTombstone,
+            final long ts) {
         return new TableEntry(key, value, hasTombstone, ts);
     }
 
-    private TableEntry(@NotNull final ByteBuffer key,
-                       @Nullable final ByteBuffer value,
-                       final boolean hasTombstone,
-                       final long ts) {
+    private TableEntry(
+            @NotNull final ByteBuffer key,
+            @Nullable final ByteBuffer value,
+            final boolean hasTombstone,
+            final long ts) {
         this.key = key;
         this.value = value;
         this.hasTombstone = hasTombstone;

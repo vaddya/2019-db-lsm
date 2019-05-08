@@ -15,8 +15,9 @@ interface Table {
     /**
      * Insert a value into the table using the given key.
      */
-    void upsert(@NotNull final ByteBuffer key,
-                @NotNull final ByteBuffer value);
+    void upsert(
+            @NotNull final ByteBuffer key,
+            @NotNull final ByteBuffer value);
 
     /**
      * Remove a value from the table using the given key.

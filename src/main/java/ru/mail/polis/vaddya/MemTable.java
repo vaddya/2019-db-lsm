@@ -20,8 +20,9 @@ final class MemTable implements Table {
     }
 
     @Override
-    public void upsert(@NotNull final ByteBuffer key,
-                       @NotNull final ByteBuffer value) {
+    public void upsert(
+            @NotNull final ByteBuffer key,
+            @NotNull final ByteBuffer value) {
         table.put(key, TableEntry.upsert(key, value));
         currentSize += Integer.BYTES + key.remaining() + Long.BYTES + Integer.BYTES + value.remaining();
     }
