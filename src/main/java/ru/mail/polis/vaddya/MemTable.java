@@ -53,10 +53,15 @@ public class MemTable implements Table {
         }
         channel.write(offsetsBuffer.flip());
 
-        final var sizeBuffer = ByteBuffer.allocate(Integer.BYTES)
+        final var intBuffer = ByteBuffer.allocate(Integer.BYTES)
                 .putInt(table.size())
                 .flip();
-        channel.write(sizeBuffer);
+        channel.write(intBuffer);
+
+        intBuffer.rewind()
+                .putInt(SSTable.MAGIC)
+                .flip();
+        channel.write(intBuffer);
 
         table.clear();
         currentSize = 0;

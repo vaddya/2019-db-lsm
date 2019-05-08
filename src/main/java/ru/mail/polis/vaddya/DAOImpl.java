@@ -49,15 +49,18 @@ public class DAOImpl implements DAO {
                 .filter(s -> s.endsWith(FINAL_SUFFIX))
                 .map(this::pathTo)
                 .map(this::parseSSTable)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
                 .collect(toList());
     }
 
     @NotNull
-    private SSTable parseSSTable(@NotNull final Path path) {
+    private Optional<SSTable> parseSSTable(@NotNull final Path path) {
         try (var channel = FileChannel.open(path, StandardOpenOption.READ)) {
-            return SSTable.from(channel);
+            return Optional.of(SSTable.from(channel));
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            System.err.println(e.getMessage() + ": " + path);
+            return Optional.empty();
         }
     }
 
@@ -111,7 +114,7 @@ public class DAOImpl implements DAO {
         Files.move(tempPath, finalPath, StandardCopyOption.ATOMIC_MOVE);
 
         final var ssTable = parseSSTable(finalPath);
-        ssTables.add(ssTable);
+        ssTable.ifPresent(ssTables::add);
     }
 
     @NotNull

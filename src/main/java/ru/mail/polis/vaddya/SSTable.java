@@ -12,6 +12,8 @@ import static java.nio.ByteOrder.BIG_ENDIAN;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 
 public final class SSTable implements Table {
+    static final int MAGIC = 0xCAFEFEED;
+
     private final int entriesCount;
     private final IntBuffer offsets;
     private final ByteBuffer entries;
@@ -26,22 +28,35 @@ public final class SSTable implements Table {
      */
     @NotNull
     public static SSTable from(@NotNull final FileChannel channel) throws IOException {
+        throwIf(channel.size() < Integer.BYTES);
         final var mapped = channel.map(READ_ONLY, 0, channel.size()).order(BIG_ENDIAN);
 
-        final var entriesCount = mapped.getInt(mapped.limit() - Integer.BYTES);
-        final var offsetsBuffer = mapped.duplicate()
-                .position(mapped.limit() - Integer.BYTES - Integer.BYTES * entriesCount)
+        final var magic = mapped.getInt(mapped.limit() - Integer.BYTES);
+        throwIf(magic != MAGIC);
+
+        final var entriesCount = mapped.getInt(mapped.limit() - Integer.BYTES * 2);
+        throwIf(entriesCount <= 0);
+        throwIf(mapped.limit() < Integer.BYTES + Integer.BYTES * entriesCount);
+
+        final var offsets = mapped.duplicate()
+                .position(mapped.limit() - Integer.BYTES * 2 - Integer.BYTES * entriesCount)
                 .limit(mapped.limit() - Integer.BYTES)
                 .slice()
-                .asReadOnlyBuffer();
-        final var offsets = offsetsBuffer.slice().asIntBuffer();
+                .asReadOnlyBuffer()
+                .asIntBuffer();
         final var entries = mapped.duplicate()
                 .position(0)
-                .limit(mapped.limit() - Integer.BYTES - Integer.BYTES * entriesCount)
+                .limit(mapped.limit() - Integer.BYTES * 2 - Integer.BYTES * entriesCount)
                 .slice()
                 .asReadOnlyBuffer();
 
         return new SSTable(entriesCount, offsets, entries);
+    }
+
+    private static void throwIf(boolean condition) throws IOException {
+        if (condition) {
+            throw new IOException("Invalid SSTable format");
+        }
     }
 
     private SSTable(final int entriesCount,
