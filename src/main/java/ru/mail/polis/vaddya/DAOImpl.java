@@ -2,6 +2,8 @@ package ru.mail.polis.vaddya;
 
 import com.google.common.collect.Iterators;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.mail.polis.DAO;
 import ru.mail.polis.Iters;
 import ru.mail.polis.Record;
@@ -23,13 +25,15 @@ import java.util.Optional;
 
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
+import static ru.mail.polis.vaddya.ByteBufferUtils.emptyBuffer;
 
 public class DAOImpl implements DAO {
     private static final String TEMP_SUFFIX = ".tmp";
     private static final String FINAL_SUFFIX = ".db";
+    private static final Logger LOG = LoggerFactory.getLogger(DAOImpl.class);
 
-    private final MemTable memTable = new MemTable();
-    private final List<SSTable> ssTables;
+    private final Table memTable = new MemTable();
+    private final List<Table> ssTables;
     private final File root;
     private final long flushThresholdInBytes;
 
@@ -50,35 +54,38 @@ public class DAOImpl implements DAO {
                 .stream()
                 .filter(s -> s.endsWith(FINAL_SUFFIX))
                 .map(this::pathTo)
-                .map(this::parseSSTable)
+                .map(this::parseTable)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(toList());
     }
 
     @NotNull
-    private Optional<SSTable> parseSSTable(@NotNull final Path path) {
+    private Optional<Table> parseTable(@NotNull final Path path) {
         try (var channel = FileChannel.open(path, StandardOpenOption.READ)) {
-            return Optional.of(SSTable.from(channel));
+            return Optional.of(Table.from(channel));
         } catch (IOException e) {
-            System.err.println(e.getMessage() + ": " + path);
+            LOG.error("{}: {}", e.getMessage(), path);
             return Optional.empty();
         }
     }
 
     @NotNull
     @Override
-    @SuppressWarnings("UnstableApiUsage")
     public Iterator<Record> iterator(@NotNull final ByteBuffer from) {
         final var iterators = ssTables.stream()
                 .map(table -> table.iterator(from))
                 .collect(toList());
         iterators.add(memTable.iterator(from));
+        final var iterator = mergeIterators(iterators);
+        return Iterators.transform(iterator, e -> Record.of(e.getKey(), e.getValue()));
+    }
 
+    @SuppressWarnings("UnstableApiUsage")
+    private Iterator<TableEntry> mergeIterators(@NotNull final List<Iterator<TableEntry>> iterators) {
         final var merged = Iterators.mergeSorted(iterators, TableEntry.COMPARATOR);
         final var collapsed = Iters.collapseEquals(merged, TableEntry::getKey);
-        final var filtered = Iterators.filter(collapsed, e -> !e.hasTombstone());
-        return Iterators.transform(filtered, e -> Record.of(e.getKey(), e.getValue()));
+        return Iterators.filter(collapsed, e -> !e.hasTombstone());
     }
 
     @Override
@@ -86,7 +93,7 @@ public class DAOImpl implements DAO {
             @NotNull final ByteBuffer key,
             @NotNull final ByteBuffer value) throws IOException {
         memTable.upsert(key.duplicate().asReadOnlyBuffer(), value.duplicate().asReadOnlyBuffer());
-        if (memTable.getCurrentSize() > flushThresholdInBytes) {
+        if (memTable.currentSize() > flushThresholdInBytes) {
             flushMemTable();
         }
     }
@@ -94,34 +101,69 @@ public class DAOImpl implements DAO {
     @Override
     public void remove(@NotNull final ByteBuffer key) throws IOException {
         memTable.remove(key.duplicate().asReadOnlyBuffer());
-        if (memTable.getCurrentSize() > flushThresholdInBytes) {
+        if (memTable.currentSize() > flushThresholdInBytes) {
             flushMemTable();
         }
     }
 
     @Override
     public void close() throws IOException {
-        if (memTable.getCurrentSize() > 0) {
+        if (memTable.currentSize() > 0) {
             flushMemTable();
         }
     }
 
+    @Override
+    public void compact() throws IOException {
+        final var iterators = ssTables.stream()
+                .map(table -> table.iterator(emptyBuffer()))
+                .collect(toList());
+        final var path = flushEntries(mergeIterators(iterators));
+
+        final var file = path.toFile();
+        Optional.ofNullable(root.listFiles(f -> !f.equals(file)))
+                .map(Arrays::asList)
+                .orElse(emptyList())
+                .forEach(this::deleteCompactedFile);
+
+        final var table = parseTable(path);
+        ssTables.clear();
+        table.ifPresent(ssTables::add);
+    }
+
     private void flushMemTable() throws IOException {
+        final var iterator = memTable.iterator(emptyBuffer());
+        final var path = flushEntries(iterator);
+
+        final var table = parseTable(path);
+        memTable.clear();
+        table.ifPresent(ssTables::add);
+    }
+
+    @NotNull
+    private Path flushEntries(@NotNull final Iterator<TableEntry> iterator) throws IOException {
         final var now = LocalDateTime.now().toString();
         final var tempPath = pathTo(now + TEMP_SUFFIX);
         try (var channel = FileChannel.open(tempPath, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
-            memTable.flushTo(channel);
+            Table.flushEntriesTo(iterator, channel);
         }
 
         final var finalPath = pathTo(now + FINAL_SUFFIX);
         Files.move(tempPath, finalPath, StandardCopyOption.ATOMIC_MOVE);
 
-        final var ssTable = parseSSTable(finalPath);
-        ssTable.ifPresent(ssTables::add);
+        return finalPath;
     }
 
     @NotNull
     private Path pathTo(@NotNull final String name) {
         return Path.of(root.getAbsolutePath(), name);
+    }
+
+    private void deleteCompactedFile(@NotNull final File file) {
+        if (file.delete()) {
+            LOG.trace("Table is removed during compaction: {}", file);
+        } else {
+            LOG.error("Unable to remove table during compaction: {}", file);
+        }
     }
 }

@@ -2,64 +2,16 @@ package ru.mail.polis.vaddya;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Iterator;
 
-import static java.nio.ByteOrder.BIG_ENDIAN;
-import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
-
 final class SSTable implements Table {
-    static final int MAGIC = 0xCAFEFEED;
-
     private final int entriesCount;
     private final IntBuffer offsets;
     private final ByteBuffer entries;
 
-    /**
-     * Create sorted strings table index using timestamp,
-     * file containing index and file containing data.
-     *
-     * @param channel channel to read index from
-     * @return an sorted strings table instance
-     * @throws IOException if cannot read from files
-     */
-    @NotNull
-    public static SSTable from(@NotNull final FileChannel channel) throws IOException {
-        throwIf(channel.size() < Integer.BYTES);
-        final var mapped = channel.map(READ_ONLY, 0, channel.size()).order(BIG_ENDIAN);
-
-        final var magic = mapped.getInt(mapped.limit() - Integer.BYTES);
-        throwIf(magic != MAGIC);
-
-        final var entriesCount = mapped.getInt(mapped.limit() - Integer.BYTES * 2);
-        throwIf(entriesCount <= 0);
-        throwIf(mapped.limit() < Integer.BYTES + Integer.BYTES * entriesCount);
-
-        final var offsets = mapped.duplicate()
-                .position(mapped.limit() - Integer.BYTES * 2 - Integer.BYTES * entriesCount)
-                .limit(mapped.limit() - Integer.BYTES)
-                .slice()
-                .asReadOnlyBuffer()
-                .asIntBuffer();
-        final var entries = mapped.duplicate()
-                .position(0)
-                .limit(mapped.limit() - Integer.BYTES * 2 - Integer.BYTES * entriesCount)
-                .slice()
-                .asReadOnlyBuffer();
-
-        return new SSTable(entriesCount, offsets, entries);
-    }
-
-    private static void throwIf(boolean condition) throws IOException {
-        if (condition) {
-            throw new IOException("Invalid SSTable format");
-        }
-    }
-
-    private SSTable(
+    SSTable(
             final int entriesCount,
             @NotNull final IntBuffer offsets,
             @NotNull final ByteBuffer entries) {
@@ -87,15 +39,8 @@ final class SSTable implements Table {
     }
 
     @Override
-    public void upsert(
-            @NotNull final ByteBuffer key,
-            @NotNull final ByteBuffer value) {
-        throw new UnsupportedOperationException("SSTable is immutable");
-    }
-
-    @Override
-    public void remove(@NotNull final ByteBuffer key) {
-        throw new UnsupportedOperationException("SSTable is immutable");
+    public int currentSize() {
+        return entries.limit();
     }
 
     private int position(@NotNull final ByteBuffer key) {
