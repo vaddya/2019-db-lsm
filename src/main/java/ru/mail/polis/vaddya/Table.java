@@ -12,8 +12,6 @@ import static java.nio.ByteOrder.BIG_ENDIAN;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 
 interface Table {
-    int MAGIC = 0xCAFEFEED;
-
     /**
      * Get iterator over the table entries starting from the given key.
      */
@@ -21,7 +19,7 @@ interface Table {
     Iterator<TableEntry> iterator(@NotNull ByteBuffer from);
 
     /**
-     * Get current size of the table entries in bytes
+     * Get current size of the table entries in bytes.
      */
     int currentSize();
 
@@ -100,18 +98,18 @@ interface Table {
     @NotNull
     static Table from(@NotNull final FileChannel channel) throws IOException {
         if (channel.size() < Integer.BYTES) {
-            throw new IOException("Invalid table format");
+            throw new IOException(SSTable.INVALID_FORMAT);
         }
         final var mapped = channel.map(READ_ONLY, 0, channel.size()).order(BIG_ENDIAN);
 
         final var magic = mapped.getInt(mapped.limit() - Integer.BYTES);
-        if (magic != MAGIC) {
-            throw new IOException("Invalid table format");
+        if (magic != SSTable.MAGIC) {
+            throw new IOException(SSTable.INVALID_FORMAT);
         }
 
         final var entriesCount = mapped.getInt(mapped.limit() - Integer.BYTES * 2);
         if (entriesCount <= 0 || mapped.limit() < Integer.BYTES + Integer.BYTES * entriesCount) {
-            throw new IOException("Invalid table format");
+            throw new IOException(SSTable.INVALID_FORMAT);
         }
 
         final var offsets = mapped.duplicate()

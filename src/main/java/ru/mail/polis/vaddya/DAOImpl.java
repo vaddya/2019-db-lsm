@@ -160,10 +160,11 @@ public class DAOImpl implements DAO {
     }
 
     private void deleteCompactedFile(@NotNull final File file) {
-        if (file.delete()) {
+        try {
+            Files.delete(file.toPath());
             LOG.trace("Table is removed during compaction: {}", file);
-        } else {
-            LOG.error("Unable to remove table during compaction: {}", file);
+        } catch (IOException e) {
+            LOG.error("Unable to remove file {} during compaction: {}", file, e.getMessage());
         }
     }
 }
