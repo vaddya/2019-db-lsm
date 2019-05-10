@@ -14,7 +14,7 @@ final class SSTable implements Table {
     private final IntBuffer offsets;
     private final ByteBuffer entries;
 
-    SSTable(
+    public SSTable(
             final int entriesCount,
             @NotNull final IntBuffer offsets,
             @NotNull final ByteBuffer entries) {

@@ -66,8 +66,8 @@ interface Table {
      * @param channel channel to write entries to
      * @throws IOException if cannot write data
      */
-    static void flushEntriesTo(
-            @NotNull Iterator<TableEntry> entries,
+    static void flushEntries(
+            @NotNull final Iterator<TableEntry> entries,
             @NotNull final FileChannel channel) throws IOException {
         final var offsets = new ArrayList<Integer>();
         var offset = 0;

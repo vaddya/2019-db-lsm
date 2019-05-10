@@ -145,7 +145,7 @@ public class DAOImpl implements DAO {
         final var now = LocalDateTime.now().toString();
         final var tempPath = pathTo(now + TEMP_SUFFIX);
         try (var channel = FileChannel.open(tempPath, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
-            Table.flushEntriesTo(iterator, channel);
+            Table.flushEntries(iterator, channel);
         }
 
         final var finalPath = pathTo(now + FINAL_SUFFIX);
